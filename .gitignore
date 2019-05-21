@@ -1,0 +1,4 @@
+/music/*
+/temp/*
+*.sock
+log.txt
