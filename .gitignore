@@ -1,5 +1,5 @@
-/music/*
 /temp/*
 *.sock
 log.txt
 test.py
+*.mp3
