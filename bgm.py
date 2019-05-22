@@ -13,7 +13,7 @@ import shutil
 
 from mutagen.mp3 import MP3
 
-ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__)) + '/'
 
 
 class Player(object):
