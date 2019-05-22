@@ -15,26 +15,105 @@ from mutagen.mp3 import MP3
 
 
 class Player(object):
-    _playlist = []
+    _playlist = queue.Queue(100)
     _playing = None
     _musicpath = os.path.abspath('music') + '/'
     _switch = True
+    _player = None
+    _next = None
 
-    def play_list(self):
+    def music_list(self):
         """
-        获取播放列表
+        音乐列表
         :return:
         """
+        mlist = []
         for item in os.listdir('music'):
             if item.endswith('.mp3'):
                 path = os.path.abspath('music/%s' % item)
-                self._playlist.append({
+                mlist.append({
                     'id': Encrypt.md5(item)[:10],
                     'name': item,
                     'path': path,
                     'length': self.mp3_length(path)
                 })
-        return self._playlist
+        return mlist
+
+    def make_play_list(self):
+        """
+        生成播放列表
+        :return:
+        """
+        Log.info('生成播放列表')
+        for item in self.music_list():
+            self.add_to_list(item)
+
+    def get_music_obj(self, name):
+        """
+        获取音乐对象
+        :param path:
+        :return:
+        """
+        return {
+            'id': Encrypt.md5(name)[:10],
+            'name': name,
+            'path': os.path.abspath('music/' + name),
+            'length': self.mp3_length('music/' + name)
+        }
+
+    def add_to_list(self, music):
+        """
+        添加音乐到播放列表
+        :param music:
+        :return:
+        """
+        Log.info('添加', music['name'])
+        self._playlist.put_nowait(music)
+
+    def play_all(self):
+        """
+        启动播放器
+        :return:
+        """
+        while True:
+            if self._playlist.empty():
+                self.make_play_list()
+            if self._next is None: self.play_next()
+            self._playing = self._next
+            self.play_next()
+            self.play(self._playing)
+            while self.is_playing():
+                pass
+
+    def play_next(self):
+        """
+        获取下一曲
+        :return:
+        """
+        self._next = self._playlist.get()
+        return self._next
+
+    def play(self, music):
+        """
+        播放音乐
+        :param music:
+        :return:
+        """
+        try:
+            Log.info('播放音乐', str(music['name']))
+            command = ['mpg123', '-C', music['path']]
+            self._player = subprocess.Popen(command, stdin=subprocess.PIPE)
+        except Exception as e:
+            Log.error('播放错误', str(e))
+
+    def what_playing(self):
+        """
+        正在播放的
+        :return:
+        """
+        if self.is_playing():
+            return self._playing
+        return None
 
     def is_playing(self):
         """
@@ -48,6 +127,27 @@ class Player(object):
                 return False
         except Exception as e:
             return False
+
+    def ctrl_start(self):
+        """
+        播放
+        :return:
+        """
+        self.is_playing() is False or self._player.stdin.write('S'.encode('utf-8'))
+
+    def ctrl_stop(self):
+        """
+        暂停
+        :return:
+        """
+        self.is_playing() is False or self._player.stdin.write('S'.encode('utf-8'))
+
+    def ctrl_next(self):
+        """
+        下一曲
+        :return:
+        """
+        self.is_playing() is False or self._player.kill()
 
     def mp3_info(self, path):
         """
@@ -89,6 +189,9 @@ class Player(object):
             return True
         Log.info('下载失败')
         os.unlink(temp)
+        music = self.get_music_obj(name)
+        self.add_to_list(music)
+        return music
 
     def get_163_music_data(self, url):
         """
@@ -143,59 +246,6 @@ class Player(object):
         if self.mp3_info(path) is not None:
             return True
         return False
-
-    def play_all(self):
-        """
-        启动播放器
-        :return:
-        """
-        pl = self.play_list()
-        for item in pl:
-            self.play(item)
-            while self.is_playing():
-                pass
-
-    def play(self, music):
-        """
-        播放音乐
-        :param music:
-        :return:
-        """
-        try:
-            Log.info('播放音乐', str(music['name']))
-            command = ['mpg123', music['path'], '-C']
-            self._player = subprocess.Popen(command, stdin=subprocess.PIPE)
-            self._playing = music
-        except Exception as e:
-            Log.error('播放错误', str(e))
-
-    def what_playing(self):
-        """
-        正在播放的
-        :return:
-        """
-        return self._playing
-
-    def ctrl_start(self):
-        """
-        播放
-        :return:
-        """
-        self.is_playing() is False or self._player.stdin.write('S'.encode('utf-8'))
-
-    def ctrl_stop(self):
-        """
-        暂停
-        :return:
-        """
-        self.is_playing() is False or self._player.stdin.write('S'.encode('utf-8'))
-
-    def ctrl_next(self):
-        """
-        下一曲
-        :return:
-        """
-        self.is_playing() is False or self._player.stdin.write('Q'.encode('utf-8'))
 
     def __del__(self):
         """
@@ -279,7 +329,7 @@ class Server(Player):
             mbj = json.loads(msg)
             if mbj['action'] == 'playlist':
                 return json.dumps({
-                    'data': self.play_list()
+                    'data': self.make_play_list()
                 })
             elif mbj['action'] == 'playing':
                 return json.dumps({
@@ -307,7 +357,7 @@ class Server(Player):
             elif mbj['action'] == 'next':
                 self.ctrl_next()
                 return json.dumps({
-                    'data': True
+                    'data': self.what_playing()
                 })
             else:
                 raise Exception('未知操作', str(mbj))
@@ -383,10 +433,10 @@ class Encrypt(object):
         return hashlib.sha1(text.encode('utf-8')).hexdigest()
 
     @staticmethod
-    def key(len=16):
+    def key(length=16):
         """生成指定位数字符串"""
         di = '0123456789abcdef'
         key = ''
-        for i in range(len):
+        for i in range(length):
             key += di[random.randint(0, 15)]
         return key

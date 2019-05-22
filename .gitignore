@@ -2,3 +2,4 @@
 /temp/*
 *.sock
 log.txt
+test.py
