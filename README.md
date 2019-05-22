@@ -5,15 +5,17 @@
 ### 安装需要的软件包(Ubuntu)
 ```bash
 sudo apt-get update
-sudo apt-get install -y pulseaudio jackd2 alsa-utils dbus-x11 mpg123
+sudo apt-get install -y pulseaudio jackd2 alsa-utils dbus-x11 mpg123 systemd
 ```
 ### 获取运行程序
 ```bash
-git clone https://github.com/kamino-space/BiliLiveBgm.git
+git clone https://github.com/isdut/BiliLiveBgm.git
 pip install -r requirements.txt
 python run.py
 ```
 ### 通过socket控制
+...
+### 开机自启
 ...
 
 ## 功能

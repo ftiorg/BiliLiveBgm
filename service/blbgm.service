@@ -1,0 +1,15 @@
+# /etc/systemd/system/blbgm.service
+
+[Unit]
+Description=BILILIVEBGM
+Documentation=https://github.com/isdut/BiliLive
+After=network.target
+
+[Service]
+ExecStart=/home/ubuntu/miniconda3/bin/python /server/BiliLiveBgm/run.py
+Restart=always
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
