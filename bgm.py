@@ -13,11 +13,13 @@ import shutil
 
 from mutagen.mp3 import MP3
 
+ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
+
 
 class Player(object):
     _playlist = queue.Queue(100)
     _playing = None
-    _musicpath = os.path.abspath('music') + '/'
+    _musicpath = os.path.abspath(ROOT_PATH + 'music') + '/'
     _switch = True
     _player = None
     _next = None
@@ -28,9 +30,9 @@ class Player(object):
         :return:
         """
         mlist = []
-        for item in os.listdir('music'):
+        for item in os.listdir(self._musicpath):
             if item.endswith('.mp3'):
-                path = os.path.abspath('music/%s' % item)
+                path = os.path.abspath(self._musicpath + '%s' % item)
                 mlist.append({
                     'id': Encrypt.md5(item)[:10],
                     'name': item,
@@ -57,8 +59,8 @@ class Player(object):
         return {
             'id': Encrypt.md5(name)[:10],
             'name': name,
-            'path': os.path.abspath('music/' + name),
-            'length': self.mp3_length('music/' + name)
+            'path': os.path.abspath(self._musicpath + name),
+            'length': self.mp3_length(self._musicpath + name)
         }
 
     def add_to_list(self, music):
@@ -180,7 +182,7 @@ class Player(object):
         })
         if response.status_code != 200:
             return False
-        temp = os.path.abspath('temp/%s' % name)
+        temp = os.path.abspath(ROOT_PATH + 'temp/%s' % name)
         with open(temp, 'wb') as f:
             f.write(response.content)
         if self.mp3_check(temp):
