@@ -17,6 +17,8 @@ from mutagen.mp3 import MP3
 class Player(object):
     _playlist = []
     _playing = None
+    _musicpath = os.path.abspath('music') + '/'
+    _switch = True
 
     def play_list(self):
         """
@@ -36,10 +38,16 @@ class Player(object):
 
     def is_playing(self):
         """
-        正在播放的
+        正在播放
         :return:
         """
-        return self._playing
+        try:
+            if self._player.poll() is None:
+                return True
+            else:
+                return False
+        except Exception as e:
+            return False
 
     def mp3_info(self, path):
         """
@@ -136,11 +144,16 @@ class Player(object):
             return True
         return False
 
-    def run_player(self):
+    def play_all(self):
         """
         启动播放器
         :return:
         """
+        pl = self.play_list()
+        for item in pl:
+            self.play(item)
+            while self.is_playing():
+                pass
 
     def play(self, music):
         """
@@ -149,33 +162,50 @@ class Player(object):
         :return:
         """
         try:
-            Log.info('播放音乐', music['name'])
-            command = ['mpg123', music['path']]
-            self._player = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True)
+            Log.info('播放音乐', str(music['name']))
+            command = ['mpg123', music['path'], '-C']
+            self._player = subprocess.Popen(command, stdin=subprocess.PIPE)
             self._playing = music
         except Exception as e:
             Log.error('播放错误', str(e))
+
+    def what_playing(self):
+        """
+        正在播放的
+        :return:
+        """
+        return self._playing
 
     def ctrl_start(self):
         """
         播放
         :return:
         """
-        self._playing is None or self._player.stdin.write('S')
+        self.is_playing() is False or self._player.stdin.write('S'.encode('utf-8'))
 
     def ctrl_stop(self):
         """
         暂停
         :return:
         """
-        self._playing is None or self._player.stdin.write('S')
+        self.is_playing() is False or self._player.stdin.write('S'.encode('utf-8'))
 
     def ctrl_next(self):
         """
         下一曲
         :return:
         """
-        self._playing is None or self._player.stdin.write('Q')
+        self.is_playing() is False or self._player.stdin.write('Q'.encode('utf-8'))
+
+    def __del__(self):
+        """
+        退出清理
+        :return:
+        """
+        try:
+            self._player.terminate()
+        except Exception as e:
+            Log.error(str(e))
 
 
 class Server(Player):
@@ -213,6 +243,8 @@ class Server(Player):
                 client, addr = self.sock.accept()
                 Log.info('客户端连接', str(addr))
                 threading.Thread(target=self.server_link, args=(client, addr,)).start()
+            except WindowsError:
+                return
             except Exception as e:
                 Log.error('错误', str(e))
 
@@ -251,7 +283,7 @@ class Server(Player):
                 })
             elif mbj['action'] == 'playing':
                 return json.dumps({
-                    'data': self.is_playing()
+                    'data': self.what_playing()
                 })
             elif mbj['action'] == 'add':
                 if self.mp3_add_directly(mbj['url']) is True:
@@ -288,14 +320,8 @@ class Server(Player):
         启动
         :return:
         """
-        try:
-            threading.Thread(target=self.server_start).start()
-            self.run_player()
-        except Exception as e:
-            Log.error('错误', str(e))
-            Log.info('5秒后尝试重启')
-            time.sleep(5)
-            self.run()
+        threading.Thread(target=self.server_start).start()
+        self.play_all()
 
 
 class Log(object):
