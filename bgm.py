@@ -103,7 +103,7 @@ class Player(object):
         """
         try:
             Log.info('播放音乐', str(music['name']))
-            command = ['mpg123', music['path']]
+            command = ['/usr/bin/mpg123', music['path']]
             self._player = subprocess.Popen(command, stdin=subprocess.PIPE)
         except Exception as e:
             Log.error('播放错误', str(e))
