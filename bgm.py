@@ -104,7 +104,7 @@ class Player(object):
         try:
             Log.info('播放音乐', str(music['name']))
             command = ['/usr/bin/mpg123', music['path']]
-            self._player = subprocess.Popen(command, stdin=subprocess.PIPE)
+            self._player = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True)
         except Exception as e:
             Log.error('播放错误', str(e))
 
@@ -372,8 +372,8 @@ class Server(Player):
         启动
         :return:
         """
-        threading.Thread(target=self.server_start).start()
-        self.play_all()
+        threading.Thread(target=self.play_all).start()
+        self.server_start()
 
 
 class Log(object):
