@@ -100,6 +100,7 @@ class Player(object):
         :param music:
         :return:
         """
+        print(music)
         try:
             Log.info('播放音乐', str(music['name']))
             command = ['mpg123', music['path']]
