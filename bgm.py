@@ -302,8 +302,6 @@ class Server():
                 client, addr = self.sock.accept()
                 Log.info('客户端连接', str(addr))
                 threading.Thread(target=self.server_link, args=(client, addr,)).start()
-            except WindowsError:
-                return
             except Exception as e:
                 Log.error('错误', str(e))
 
