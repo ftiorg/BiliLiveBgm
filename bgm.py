@@ -285,10 +285,11 @@ class Player(object):
 
 class Server():
 
-    def __init__(self, unix=False, host='127.0.0.1', port=9999):
+    def __init__(self, unix=False, host='127.0.0.1', port=9999, path='/var/run/bgm.sock'):
         self.unix = unix
         self.host = host
         self.port = port
+        self.path = path
 
     def server_init(self):
         """
@@ -297,10 +298,10 @@ class Server():
         """
         if self.unix is True:
             self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            if os.path.exists('bgmserver.sock'):
-                os.unlink('bgmserver.sock')
-            self.sock.bind('bgmserver.sock')
-            Log.info('UNIX监听', 'bgmserver.sock')
+            if os.path.exists(self.path):
+                os.unlink(self.path)
+            self.sock.bind(self.path)
+            Log.info('UNIX监听', self.path)
         else:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.bind((self.host, self.port))
