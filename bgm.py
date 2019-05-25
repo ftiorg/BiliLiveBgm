@@ -77,6 +77,7 @@ class Player(object):
         启动播放器
         :return:
         """
+        Log.info("开始播放")
         while True:
             if self._playlist.empty(): self.make_play_list()
             if self._next is None: self.play_next()
