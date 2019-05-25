@@ -411,7 +411,7 @@ class Log(object):
             msg=msg
         )
         print(text)
-        with open('log.txt', 'a', encoding='utf-8') as f:
+        with open(ROOT_PATH + 'log.txt', 'a', encoding='utf-8') as f:
             f.write(text + '\r')
 
     @staticmethod
