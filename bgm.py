@@ -104,7 +104,7 @@ class Player(object):
         try:
             Log.info('播放音乐', str(music['name']))
             command = ['mpg123', '%s' % music['path']]
-            self._player = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True)
+            self._player = subprocess.Popen(command, stdin=subprocess.PIPE)
         except Exception as e:
             Log.error('播放错误', str(e))
 
@@ -374,6 +374,11 @@ class Server():
                 self.player.ctrl_next()
                 return json.dumps({
                     'data': self.player.what_playing()
+                })
+            elif mbj['action'] == 'clear':
+                self.player.clear_list()
+                return json.dumps({
+                    'data': True
                 })
             else:
                 raise Exception('未知操作', str(mbj))
