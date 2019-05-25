@@ -78,8 +78,7 @@ class Player(object):
         :return:
         """
         while True:
-            if self._playlist.empty():
-                self.make_play_list()
+            if self._playlist.empty(): self.make_play_list()
             if self._next is None: self.play_next()
             self._playing = self._next
             self.play_next()
@@ -163,6 +162,14 @@ class Player(object):
         except Exception as e:
             Log.error('错误', str(e))
             return None
+
+    def clear_list(self):
+        """
+        清空当前播放列表
+        :return:
+        """
+        while self._playlist.empty() is not None:
+            self._playlist.get()
 
     def mp3_add_directly(self, url):
         """
@@ -260,7 +267,7 @@ class Player(object):
             Log.error(str(e))
 
 
-class Server(Player):
+class Server():
 
     def __init__(self, unix=False, port=9999):
         self.unix = unix
@@ -321,6 +328,14 @@ class Server(Player):
             Log.info('断开连接', str(addr))
             sock.close()
 
+    def run_player(self):
+        """
+        启动播放器
+        :return:
+        """
+        self.player = Player()
+        self.player.play_all()
+
     def handle_msg(self, msg):
         """
         处理消息
@@ -331,14 +346,14 @@ class Server(Player):
             mbj = json.loads(msg)
             if mbj['action'] == 'playlist':
                 return json.dumps({
-                    'data': self.make_play_list()
+                    'data': self.player.make_play_list()
                 })
             elif mbj['action'] == 'playing':
                 return json.dumps({
-                    'data': self.what_playing()
+                    'data': self.player.what_playing()
                 })
             elif mbj['action'] == 'add':
-                if self.mp3_add_directly(mbj['url']) is True:
+                if self.player.mp3_add_directly(mbj['url']) is True:
                     return json.dumps({
                         'data': True
                     })
@@ -347,19 +362,19 @@ class Server(Player):
                         'data': False
                     })
             elif mbj['action'] == 'start':
-                self.ctrl_start()
+                self.player.ctrl_start()
                 return json.dumps({
                     'data': True
                 })
             elif mbj['action'] == 'stop':
-                self.ctrl_stop()
+                self.player.ctrl_stop()
                 return json.dumps({
                     'data': True
                 })
             elif mbj['action'] == 'next':
-                self.ctrl_next()
+                self.player.ctrl_next()
                 return json.dumps({
-                    'data': self.what_playing()
+                    'data': self.player.what_playing()
                 })
             else:
                 raise Exception('未知操作', str(mbj))
@@ -372,7 +387,7 @@ class Server(Player):
         启动
         :return:
         """
-        threading.Thread(target=self.play_all).start()
+        threading.Thread(target=self.run_player).start()
         self.server_start()
 
 
