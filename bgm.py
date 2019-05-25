@@ -29,7 +29,7 @@ class Player(object):
         音乐列表
         :return:
         """
-        mlist = []
+        mlist = []  # TODO: 文件夹没有音乐时add无效
         for item in os.listdir(self._musicpath):
             if item.endswith('.mp3'):
                 path = os.path.abspath(self._musicpath + '%s' % item)
@@ -79,7 +79,6 @@ class Player(object):
         """
         Log.info("开始播放")
         while True:
-            if self._playlist.empty(): self.make_play_list()
             if self._next is None: self.play_next()
             self._playing = self._next
             self.play_next()
@@ -92,6 +91,7 @@ class Player(object):
         获取下一曲
         :return:
         """
+        if self._playlist.empty(): self.make_play_list()
         self._next = self._playlist.get()
         return self._next
 
@@ -117,6 +117,15 @@ class Player(object):
         if self.is_playing():
             return self._playing
         return None
+
+    def what_next(self):
+        """
+        下一曲是啥
+        :return:
+        """
+        if self._next is None:
+            return None
+        return self._next
 
     def is_playing(self):
         """
@@ -271,8 +280,9 @@ class Player(object):
 
 class Server():
 
-    def __init__(self, unix=False, port=9999):
+    def __init__(self, unix=False, host='127.0.0.1', port=9999):
         self.unix = unix
+        self.host = host
         self.port = port
 
     def server_init(self):
@@ -288,7 +298,7 @@ class Server():
             Log.info('UNIX监听', 'bgmserver.sock')
         else:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.bind((socket.gethostname(), self.port))
+            self.sock.bind((self.host, self.port))
             Log.info('SOCKET监听', '%s:%s' % (socket.gethostname(), str(self.port)))
 
     def server_start(self):
@@ -374,7 +384,7 @@ class Server():
             elif mbj['action'] == 'next':
                 self.player.ctrl_next()
                 return json.dumps({
-                    'data': self.player.what_playing()
+                    'data': self.player.what_next()
                 })
             elif mbj['action'] == 'clear':
                 self.player.clear_list()
@@ -411,7 +421,7 @@ class Log(object):
             msg=msg
         )
         print(text)
-        #with open(ROOT_PATH + 'log.txt', 'a', encoding='utf-8') as f:
+        # with open(ROOT_PATH + 'log.txt', 'a', encoding='utf-8') as f:
         #    f.write(text + '\r')
 
     @staticmethod
