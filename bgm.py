@@ -176,11 +176,12 @@ class Player(object):
 
     def clear_list(self):
         """
-        清空当前播放列表
+        清空当前播放列表 TODO: 貌似不能用
         :return:
         """
-        while self._playlist.empty() is not None:
+        while self._playlist.empty() is False:
             self._playlist.get()
+        self.ctrl_stop()
 
     def mp3_add_directly(self, url):
         """
@@ -190,6 +191,10 @@ class Player(object):
         """
         data = self.get_163_music_data(url)
         name = '%s - %s.mp3' % (data['author'], data['title'])
+        temp = os.path.abspath(ROOT_PATH + 'temp/%s' % name)
+        save = os.path.abspath(ROOT_PATH + 'music/%s' % name)
+        if(self.mp3_check(save)):
+            return self.get_music_obj(name)
         Log.info('下载', name)
         if data is None:
             Log.info('获取信息失败')
@@ -200,18 +205,18 @@ class Player(object):
         })
         if response.status_code != 200:
             return False
-        temp = os.path.abspath(ROOT_PATH + 'temp/%s' % name)
         with open(temp, 'wb') as f:
             f.write(response.content)
         if self.mp3_check(temp):
             Log.info('下载成功')
-            shutil.move(temp, 'music/%s' % name)
-            return True
+            shutil.move(temp, save)
+            music = self.get_music_obj(name)
+            self.add_to_list(music)
+            return music
         Log.info('下载失败')
         os.unlink(temp)
-        music = self.get_music_obj(name)
-        self.add_to_list(music)
-        return music
+        return False
+
 
     def get_163_music_data(self, url):
         """
@@ -362,10 +367,15 @@ class Server():
                 return json.dumps({
                     'data': self.player.what_playing()
                 })
+            elif mbj['action'] == 'willplay':
+                return json.dumps({
+                    'data': self.player.what_next()
+                })
             elif mbj['action'] == 'add':
-                if self.player.mp3_add_directly(mbj['url']) is True:
+                add = self.player.mp3_add_directly(mbj['url'])
+                if add is not False:
                     return json.dumps({
-                        'data': True
+                        'data': add
                     })
                 else:
                     return json.dumps({
