@@ -84,7 +84,7 @@ class Player(object):
             self.play_next()
             self.play(self._playing)
             while self.is_playing():
-                pass
+                time.sleep(0.5)
 
     def play_next(self):
         """
@@ -193,7 +193,7 @@ class Player(object):
         name = '%s - %s.mp3' % (data['author'], data['title'])
         temp = os.path.abspath(ROOT_PATH + 'temp/%s' % name)
         save = os.path.abspath(ROOT_PATH + 'music/%s' % name)
-        if(self.mp3_check(save)):
+        if (self.mp3_check(save)):
             return self.get_music_obj(name)
         Log.info('下载', name)
         if data is None:
@@ -216,7 +216,6 @@ class Player(object):
         Log.info('下载失败')
         os.unlink(temp)
         return False
-
 
     def get_163_music_data(self, url):
         """
